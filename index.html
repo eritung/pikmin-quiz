@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>你是哪一種皮克敏？</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green-dark: #2d6a4f;
+    --green-mid: #52b788;
+    --green-light: #d8f3dc;
+    --green-pale: #f0faf2;
+    --soil: #a07850;
+    --soil-light: #f5e6d3;
+    --white: #ffffff;
+    --text-dark: #1b3a2d;
+    --text-mid: #3d6b52;
+    --text-light: #7aab8a;
+    --shadow: rgba(45, 106, 79, 0.15);
+    --radius-sm: 12px;
+    --radius-md: 20px;
+    --radius-lg: 32px;
+    --radius-xl: 48px;
+  }
+
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--green-pale);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  /* Grass decoration */
+  body::before {
+    content: '';
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 80px;
+    background: repeating-linear-gradient(
+      90deg,
+      #52b788 0px, #52b788 8px,
+      #3a9a6e 8px, #3a9a6e 16px,
+      #2d8a5f 16px, #2d8a5f 24px
+    );
+    clip-path: polygon(
+      0% 100%, 2% 40%, 4% 100%, 6% 30%, 8% 100%,
+      10% 45%, 12% 100%, 14% 35%, 16% 100%, 18% 50%,
+      20% 100%, 22% 38%, 24% 100%, 26% 42%, 28% 100%,
+      30% 33%, 32% 100%, 34% 48%, 36% 100%, 38% 36%,
+      40% 100%, 42% 44%, 44% 100%, 46% 31%, 48% 100%,
+      50% 47%, 52% 100%, 54% 40%, 56% 100%, 58% 35%,
+      60% 100%, 62% 43%, 64% 100%, 66% 38%, 68% 100%,
+      70% 46%, 72% 100%, 74% 33%, 76% 100%, 78% 41%,
+      80% 100%, 82% 37%, 84% 100%, 86% 49%, 88% 100%,
+      90% 36%, 92% 100%, 94% 43%, 96% 100%, 98% 38%,
+      100% 100%
+    );
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* Floating leaves */
+  .leaf {
+    position: fixed;
+    width: 20px;
+    height: 20px;
+    border-radius: 50% 0 50% 0;
+    opacity: 0.25;
+    animation: floatLeaf linear infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .leaf:nth-child(1) { background: #52b788; top: 10%; left: 5%; animation-duration: 8s; animation-delay: 0s; }
+  .leaf:nth-child(2) { background: #3a9a6e; top: 20%; right: 8%; animation-duration: 11s; animation-delay: 2s; width: 14px; height: 14px; }
+  .leaf:nth-child(3) { background: #52b788; top: 60%; left: 3%; animation-duration: 9s; animation-delay: 1s; width: 16px; height: 16px; }
+  .leaf:nth-child(4) { background: #2d6a4f; top: 40%; right: 5%; animation-duration: 13s; animation-delay: 4s; }
+  .leaf:nth-child(5) { background: #52b788; top: 75%; left: 12%; animation-duration: 7s; animation-delay: 0.5s; width: 12px; height: 12px; }
+
+  @keyframes floatLeaf {
+    0% { transform: translateY(0) rotate(0deg); opacity: 0.25; }
+    50% { transform: translateY(-20px) rotate(180deg); opacity: 0.15; }
+    100% { transform: translateY(0) rotate(360deg); opacity: 0.25; }
+  }
+
+  /* Card container */
+  .card {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: 40px 36px;
+    box-shadow: 0 8px 40px var(--shadow), 0 2px 8px rgba(0,0,0,0.06);
+    width: 100%;
+    max-width: 480px;
+    position: relative;
+    z-index: 1;
+    animation: cardIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(30px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* ======================== SCREEN MANAGEMENT ======================== */
+  .screen { display: none; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; width: 100%; }
+
+  /* ======================== INTRO SCREEN ======================== */
+  .intro-badge {
+    background: var(--green-light);
+    color: var(--green-dark);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 99px;
+    margin-bottom: 20px;
+    display: inline-block;
+  }
+
+  .intro-illustration {
+    width: 100%;
+    height: 190px;
+    margin: 2px auto 22px;
+    overflow: visible;
+  }
+  .pikmin-bunch {
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 2px;
+    padding: 16px 0 8px;
+  }
+  .pikmin-icon {
+    --pk: #e84545;
+    --pk-dark: #9b1c1c;
+    --stem: #5c9d50;
+    --leaf: #75c94b;
+    --flower: #f5f7fb;
+    position: relative;
+    width: 40px;
+    height: 144px;
+    flex: 0 0 40px;
+    animation: pkBob 2.7s ease-in-out infinite;
+    transform-origin: center bottom;
+    filter: drop-shadow(0 8px 10px rgba(45, 106, 79, 0.14));
+  }
+  @keyframes pkBob {
+    0%, 100% { translate: 0 0; }
+    50% { translate: 0 -7px; }
+  }
+  .pikmin-icon:nth-child(2n) { animation-delay: .25s; }
+  .pikmin-icon:nth-child(3n) { animation-delay: .5s; }
+  .pikmin-icon.pk-red { --pk:#f4453f; --pk-dark:#b8201d; height: 120px; margin-left: 2px; }
+  .pikmin-icon.pk-yellow { --pk:#ffc928; --pk-dark:#c18b00; height: 114px; }
+  .pikmin-icon.pk-blue { --pk:#126be6; --pk-dark:#0f3f96; height: 117px; }
+  .pikmin-icon.pk-purple { --pk:#8a37bd; --pk-dark:#542074; width: 52px; flex-basis:52px; height: 118px; }
+  .pikmin-icon.pk-white { --pk:#f4f7ef; --pk-dark:#d6dccc; width: 32px; flex-basis:32px; height: 106px; margin-right: 2px; }
+  .pikmin-icon.pk-rock { --pk:#25282d; --pk-dark:#111316; width: 56px; flex-basis:56px; height: 140px; }
+  .pikmin-icon.pk-winged { --pk:#ff5ca8; --pk-dark:#c42e76; width: 32px; flex-basis:32px; height: 150px; margin-bottom: 26px; }
+  .pikmin-icon.pk-ice { --pk:#9be8e8; --pk-dark:#54bfc2; width: 48px; flex-basis:48px; height: 118px; }
+
+  .p-stem {
+    position:absolute;
+    left:50%;
+    bottom: 75px;
+    width: 4px;
+    height: 42px;
+    margin-left: -2px;
+    background: linear-gradient(180deg, #7bc768, var(--stem));
+    border-radius: 99px;
+    transform: rotate(4deg);
+    transform-origin: bottom center;
+    z-index: 1;
+  }
+  .p-leaf {
+    position:absolute;
+    left:50%;
+    bottom: 113px;
+    width: 23px;
+    height: 14px;
+    margin-left: 1px;
+    background: radial-gradient(circle at 28% 30%, #d5ff73 0 16%, var(--leaf) 45%, #48a83d 100%);
+    border-radius: 80% 16% 80% 18%;
+    transform: rotate(-24deg);
+    transform-origin: left bottom;
+    z-index: 2;
+  }
+  .p-flower {
+    position:absolute;
+    left:50%;
+    bottom: 112px;
+    width: 28px;
+    height: 28px;
+    margin-left: -14px;
+    z-index: 2;
+    display: none;
+  }
+  .p-flower::before,
+  .p-flower::after {
+    content:'';
+    position:absolute;
+    inset: 5px;
+    background: var(--flower);
+    border-radius: 70% 30% 70% 30%;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.04);
+  }
+  .p-flower::before { transform: rotate(0deg); }
+  .p-flower::after { transform: rotate(70deg); }
+  .p-bud {
+    position:absolute;
+    left:50%;
+    bottom: 116px;
+    width: 20px;
+    height: 24px;
+    margin-left: -10px;
+    background: radial-gradient(circle at 32% 22%, #ff79ba, var(--flower));
+    border-radius: 56% 56% 48% 48%;
+    display: none;
+    z-index: 2;
+  }
+  .p-head {
+    position:absolute;
+    left:50%;
+    bottom: 38px;
+    width: 28px;
+    height: 36px;
+    margin-left: -14px;
+    background: radial-gradient(circle at 34% 25%, rgba(255,255,255,.36), transparent 24%), var(--pk);
+    border-radius: 54% 54% 48% 48%;
+    box-shadow: inset 0 -5px 0 rgba(0,0,0,.08);
+    z-index: 3;
+  }
+  .p-body {
+    position:absolute;
+    left:50%;
+    bottom: 15px;
+    width: 18px;
+    height: 30px;
+    margin-left: -9px;
+    background: radial-gradient(circle at 34% 25%, rgba(255,255,255,.24), transparent 24%), var(--pk);
+    border-radius: 45% 45% 42% 42%;
+    box-shadow: inset 0 -5px 0 rgba(0,0,0,.08);
+    z-index: 2;
+  }
+  .p-eye-row {
+    position:absolute;
+    left:50%;
+    bottom: 58px;
+    width: 23px;
+    margin-left: -11.5px;
+    display:flex;
+    justify-content:space-between;
+    z-index: 6;
+  }
+  .p-eye {
+    width: 7px;
+    height: 9px;
+    background:#fff;
+    border: 1px solid rgba(0,0,0,.16);
+    border-radius: 50%;
+    position:relative;
+  }
+  .p-eye::after {
+    content:'';
+    position:absolute;
+    left:2px;
+    top:3px;
+    width:3px;
+    height:3px;
+    background:#151515;
+    border-radius:50%;
+  }
+  .p-feet {
+    position:absolute;
+    left:50%;
+    bottom: 7px;
+    width: 24px;
+    margin-left: -12px;
+    display:flex;
+    justify-content:space-between;
+    z-index:1;
+  }
+  .p-foot {
+    width: 9px;
+    height: 7px;
+    background: var(--pk-dark);
+    border-radius: 99px 99px 60% 60%;
+  }
+  .p-arm {
+    position:absolute;
+    bottom: 27px;
+    width: 16px;
+    height: 3px;
+    background: var(--pk-dark);
+    border-radius:99px;
+    z-index:1;
+  }
+  .p-arm.left { left: 9px; transform: rotate(28deg); }
+  .p-arm.right { right: 9px; transform: rotate(-28deg); }
+  .p-ear, .p-nose, .p-wing, .p-spike, .p-facet { position:absolute; display:none; }
+
+  .pk-red .p-nose {
+    display:block;
+    left:50%; bottom: 52px;
+    width: 14px; height: 9px;
+    margin-left: -7px;
+    background: var(--pk-dark);
+    clip-path: polygon(50% 100%, 0 0, 100% 0);
+    z-index: 5;
+  }
+  .pk-blue .p-head { width: 26px; height: 34px; margin-left:-13px; }
+  .pk-blue .p-nose {
+    display:block;
+    left:50%; bottom: 50px;
+    width: 10px; height: 7px;
+    margin-left: -5px;
+    background: #0f3f96;
+    border-radius: 50% 50% 60% 60%;
+    z-index: 5;
+  }
+  .pk-yellow .p-ear {
+    display:block;
+    width: 18px;
+    height: 17px;
+    bottom: 55px;
+    background: var(--pk);
+    clip-path: polygon(0 50%, 100% 0, 78% 100%);
+    z-index: 2;
+  }
+  .pk-yellow .p-ear.left { left: 3px; transform: rotate(12deg) scaleX(-1); }
+  .pk-yellow .p-ear.right { right: 3px; transform: rotate(-12deg); }
+  .pk-yellow .p-flower { display:block; --flower:#f7f8ec; }
+  .pk-yellow .p-leaf { display:none; }
+  .pk-white .p-eye { background:#e91b35; width:8px; height:8px; border:none; box-shadow:0 0 0 1px rgba(255,255,255,.35); }
+  .pk-white .p-eye::after { background:#ff8b9b; left:2px; top:2px; width:2px; height:2px; }
+  .pk-white .p-head { width:25px; height:34px; margin-left:-12.5px; }
+  .pk-white .p-body { width:14px; height:28px; margin-left:-7px; }
+  .pk-white .p-flower { display:block; --flower:#d01679; transform: scale(.8); }
+  .pk-white .p-leaf { display:none; }
+  .pk-purple .p-head { width:40px; height:40px; margin-left:-20px; border-radius:54% 54% 45% 45%; }
+  .pk-purple .p-body { width:29px; height:34px; margin-left:-14.5px; }
+  .pk-purple .p-eye-row { width:30px; margin-left:-15px; }
+  .pk-purple .p-bud { display:block; --flower:#d81788; }
+  .pk-purple .p-leaf { display:none; }
+  .pk-purple .p-spike {
+    display:block;
+    bottom: 58px;
+    width: 16px;
+    height: 2px;
+    background: var(--pk-dark);
+    border-radius: 99px;
+    z-index:1;
+  }
+  .pk-purple .p-spike.s1 { left: 0; transform: rotate(25deg); }
+  .pk-purple .p-spike.s2 { left: 1px; bottom: 68px; transform: rotate(0deg); }
+  .pk-purple .p-spike.s3 { right: 0; transform: rotate(-25deg); }
+  .pk-purple .p-spike.s4 { right: 1px; bottom: 68px; transform: rotate(0deg); }
+  .pk-rock .p-head,
+  .pk-rock .p-body {
+    background: linear-gradient(135deg, #4b4f56, #16181c 65%, #050607);
+    border-radius: 18% 32% 20% 38%;
+    clip-path: polygon(16% 8%, 72% 0, 98% 36%, 76% 95%, 22% 100%, 0 52%);
+  }
+  .pk-rock .p-head { width: 46px; height: 50px; margin-left:-23px; bottom:34px; }
+  .pk-rock .p-body { width: 33px; height: 30px; margin-left:-16px; bottom:15px; }
+  .pk-rock .p-eye-row { bottom:58px; width:30px; margin-left:-15px; }
+  .pk-rock .p-facet {
+    display:block;
+    width: 22px; height: 22px;
+    left:50%; bottom:52px;
+    margin-left:-4px;
+    background:rgba(255,255,255,.16);
+    clip-path: polygon(0 0, 100% 15%, 55% 100%);
+    z-index:4;
+  }
+  .pk-rock .p-stem { height:58px; bottom:81px; transform: rotate(9deg); }
+  .pk-rock .p-leaf { bottom:136px; width:34px; height:19px; }
+  .pk-winged .p-head { width:24px; height:24px; margin-left:-12px; bottom:54px; border-radius:50%; }
+  .pk-winged .p-body { width:18px; height:28px; margin-left:-9px; bottom:24px; background: repeating-linear-gradient(0deg, rgba(255,255,255,.38) 0 3px, transparent 3px 8px), var(--pk); border-radius:48% 48% 42% 42%; }
+  .pk-winged .p-eye-row { width:32px; margin-left:-16px; bottom:62px; }
+  .pk-winged .p-eye { width:12px; height:12px; background:#00a1c8; }
+  .pk-winged .p-wing {
+    display:block;
+    bottom: 43px;
+    width: 17px;
+    height: 25px;
+    background: rgba(255,255,255,.58);
+    border: 1px solid rgba(100,100,100,.14);
+    border-radius: 80% 20% 80% 20%;
+    z-index: 1;
+  }
+  .pk-winged .p-wing.left { left: 1px; transform: rotate(-18deg) scaleX(-1); }
+  .pk-winged .p-wing.right { right: 1px; transform: rotate(18deg); }
+  .pk-winged .p-stem { height:58px; bottom:76px; background: linear-gradient(180deg,#ffb3d0,#f06aa9); transform: rotate(-8deg); }
+  .pk-winged .p-leaf { bottom:130px; }
+  .pk-ice .p-head,
+  .pk-ice .p-body {
+    background: linear-gradient(135deg, rgba(255,255,255,.72), transparent 28%), linear-gradient(160deg,#bff8f8,#69d6da);
+    clip-path: polygon(20% 5%, 80% 0, 100% 35%, 88% 80%, 46% 100%, 8% 78%, 0 36%);
+    border-radius: 22%;
+  }
+  .pk-ice .p-head { width:34px; height:38px; margin-left:-17px; }
+  .pk-ice .p-body { width:28px; height:32px; margin-left:-14px; }
+  .pk-ice .p-eye-row { width:26px; margin-left:-13px; }
+  .pk-ice .p-flower { display:block; --flower:#f2d315; transform: rotate(22deg) scale(.9); }
+  .pk-ice .p-leaf { display:none; }
+
+  .name-field {
+    width: 100%;
+    margin: -10px 0 16px;
+    text-align: left;
+  }
+  .name-field label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-mid);
+    font-weight: 800;
+    margin: 0 0 8px 4px;
+  }
+  .name-input {
+    width: 100%;
+    border: 2.5px solid var(--green-light);
+    background: #fbfffc;
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-dark);
+    outline: none;
+    transition: all .2s ease;
+  }
+  .name-input:focus {
+    border-color: var(--green-mid);
+    box-shadow: 0 0 0 4px rgba(82,183,136,.16);
+  }
+  @media (max-width: 520px) {
+    .pikmin-bunch { gap: 1px; padding-top: 22px; transform: scale(.88); transform-origin: center bottom; }
+    .intro-illustration { height: 150px; margin-bottom: 16px; }
+    .card { padding: 34px 24px; }
+  }
+
+  .intro-title {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--text-dark);
+    text-align: center;
+    line-height: 1.25;
+    margin-bottom: 14px;
+    letter-spacing: -0.5px;
+    -webkit-text-stroke: 1px rgba(45,106,79,0.15);
+  }
+  .intro-title span { color: var(--green-dark); }
+
+  .intro-desc {
+    font-size: 15px;
+    color: var(--text-mid);
+    text-align: center;
+    line-height: 1.7;
+    margin-bottom: 32px;
+  }
+
+  .btn-primary {
+    display: block;
+    width: 100%;
+    padding: 18px;
+    background: var(--green-dark);
+    color: white;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 20px;
+    font-weight: 900;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    letter-spacing: 1px;
+    text-shadow: 0 2px 0 rgba(0,0,0,0.2);
+    box-shadow: 0 5px 0 #1a3d2b;
+  }
+  .btn-primary:hover { background: #1e4d3a; transform: translateY(-2px); box-shadow: 0 7px 0 #1a3d2b; }
+  .btn-primary:active { transform: translateY(3px); box-shadow: 0 2px 0 #1a3d2b; }
+
+  .intro-meta {
+    font-size: 13px;
+    color: var(--text-light);
+    text-align: center;
+    margin-top: 16px;
+  }
+
+  /* ======================== QUESTION SCREEN ======================== */
+  .progress-wrap {
+    margin-bottom: 28px;
+  }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-light);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .progress-bar {
+    height: 8px;
+    background: var(--green-light);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #52b788, #2d6a4f);
+    border-radius: 99px;
+    transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .question-num {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--green-mid);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .question-text {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--text-dark);
+    line-height: 1.4;
+    margin-bottom: 28px;
+  }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .option-btn {
+    padding: 15px 13px;
+    background: var(--green-pale);
+    border: 2.5px solid var(--green-light);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-dark);
+    line-height: 1.4;
+    text-align: center;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 3px 0 #b7dcc4;
+  }
+  .option-btn:hover {
+    background: var(--green-light);
+    border-color: var(--green-mid);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 #9dccb0;
+    color: var(--green-dark);
+  }
+  .option-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #9dccb0; }
+  .option-btn.selected {
+    background: var(--green-dark);
+    border-color: var(--green-dark);
+    color: white;
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #1a3d2b;
+  }
+  .option-emoji { display: none; }
+
+  /* ======================== LOADING SCREEN ======================== */
+  .loading-screen {
+    text-align: center;
+  }
+  .loading-circles {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 30px 0;
+  }
+  .loading-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    animation: loadBounce 1.2s ease-in-out infinite;
+  }
+  .loading-dot:nth-child(1) { background: #e84545; animation-delay: 0s; }
+  .loading-dot:nth-child(2) { background: #f5c842; animation-delay: 0.15s; }
+  .loading-dot:nth-child(3) { background: #4a90d9; animation-delay: 0.3s; }
+  .loading-dot:nth-child(4) { background: #8b5cf6; animation-delay: 0.45s; }
+  .loading-dot:nth-child(5) { background: #f472b6; animation-delay: 0.6s; }
+  .loading-dot:nth-child(6) { background: #87ceeb; animation-delay: 0.75s; }
+
+  @keyframes loadBounce {
+    0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+    40% { transform: scale(1.3); opacity: 1; }
+  }
+
+  .loading-title {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 26px;
+    font-weight: 900;
+    color: var(--text-dark);
+    margin-bottom: 10px;
+  }
+  .loading-sub {
+    font-size: 15px;
+    color: var(--text-light);
+  }
+
+  /* ======================== RESULT SCREEN ======================== */
+  .result-card {
+    position: relative;
+    overflow: visible;
+  }
+
+  .result-badge {
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 20px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .result-secret {
+    background: #fff9df;
+    color: #6b4c05;
+    border: 1.5px solid #f2d56b;
+    border-radius: 18px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.45;
+    text-align: center;
+    margin: -10px auto 18px;
+    box-shadow: 0 3px 12px rgba(107, 76, 5, 0.08);
+  }
+
+  .result-image-area {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    margin: 16px auto 20px;
+    position: relative;
+    cursor: default;
+    overflow: hidden;
+    border: 5px solid white;
+    box-shadow: 0 6px 24px var(--shadow);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    flex-shrink: 0;
+  }
+  .result-image-area:hover { transform: none; }
+
+  .result-image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--green-light);
+  }
+  .result-image-placeholder .upload-icon { font-size: 32px; }
+  .result-image-placeholder .upload-text { font-size: 12px; font-weight: 700; color: var(--green-dark); text-align: center; line-height: 1.4; }
+
+  .result-image-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+  }
+
+  .upload-input { display: none; }
+
+  .result-type-tag {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .result-name {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 30px;
+    font-weight: 900;
+    color: var(--text-dark);
+    text-align: center;
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+
+  .result-divider {
+    height: 2px;
+    background: var(--green-light);
+    border-radius: 2px;
+    margin: 16px 0;
+  }
+
+  .result-traits {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .trait-pill {
+    padding: 6px 14px;
+    border-radius: 99px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .result-section-title {
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: var(--text-dark);
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .result-desc {
+    font-size: 15px;
+    color: var(--text-mid);
+    line-height: 1.75;
+    text-align: center;
+    margin-bottom: 18px;
+    background: #fbfffc;
+    border: 1.5px solid var(--green-light);
+    border-radius: 18px;
+    padding: 16px 15px;
+  }
+  .radar-panel {
+    background: linear-gradient(180deg, #fbfefb, #f4faf6);
+    border: 1.5px solid var(--green-light);
+    border-radius: 20px;
+    padding: 16px 14px 18px;
+    margin-bottom: 22px;
+  }
+  .radar-wrap { max-width: 280px; margin: 0 auto; }
+  #result-radar { width: 100%; height: auto; display: block; }
+
+  .share-row {
+    display: flex;
+    gap: 10px;
+  }
+  .btn-share {
+    flex: 1;
+    padding: 14px;
+    border-radius: var(--radius-md);
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-share:hover { transform: scale(1.04); }
+  .btn-share:active { transform: scale(0.97); }
+  .btn-img-share {
+    background: var(--green-dark);
+    color: white;
+  }
+  .btn-text-share {
+    background: var(--green-light);
+    color: var(--green-dark);
+  }
+  .btn-retry {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 12px;
+    background: transparent;
+    border: 2px solid var(--green-light);
+    border-radius: var(--radius-md);
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-light);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-retry:hover { background: var(--green-light); color: var(--green-dark); }
+
+  /* ======================== RESULT GALLERY (admin view) ======================== */
+  .gallery-screen {
+    max-width: 700px;
+    width: 100%;
+    z-index: 1;
+  }
+  .gallery-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 28px;
+    color: var(--text-dark);
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .gallery-sub {
+    font-size: 14px;
+    color: var(--text-light);
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .gallery-item {
+    background: white;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: 0 4px 16px var(--shadow);
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+  }
+  .gallery-item:hover { transform: scale(1.05); }
+  .gallery-img-wrap {
+    height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .gallery-img-bg {
+    position: absolute;
+    inset: 0;
+    opacity: 0.15;
+  }
+  .gallery-pikmin-preview {
+    font-size: 48px;
+    position: relative;
+    z-index: 1;
+  }
+  .gallery-user-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+    position: absolute;
+    inset: 0;
+  }
+  .gallery-item-name {
+    padding: 10px 12px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-dark);
+    text-align: center;
+  }
+  .gallery-upload-hint {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 99px;
+  }
+  .gallery-upload-input { display: none; }
+
+  /* ======================== SHARE OVERLAY ======================== */
+  .share-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .share-overlay.open { display: flex; }
+  .share-modal {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    width: 100%;
+    max-width: 400px;
+    animation: cardIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  .share-modal-title {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--text-dark);
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .share-preview-card {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .share-card-inner {
+    padding: 28px 20px;
+    text-align: center;
+    position: relative;
+  }
+  .share-card-img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid white;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    margin: 0 auto 12px;
+    display: block;
+  }
+  .share-card-placeholder-img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 4px solid white;
+    margin: 0 auto 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 44px;
+  }
+  .share-card-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 4px;
+  }
+  .share-card-name {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 24px;
+    font-weight: 900;
+    color: white;
+    margin-bottom: 10px;
+  }
+  .share-card-tagline {
+    font-size: 13px;
+    color: rgba(255,255,255,0.9);
+    line-height: 1.5;
+  }
+  .share-card-site {
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    margin-top: 12px;
+    font-weight: 700;
+  }
+  .share-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .btn-dl {
+    padding: 14px;
+    border-radius: var(--radius-md);
+    font-family: 'Nunito', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-dl-img { background: var(--green-dark); color: white; }
+  .btn-dl-img:hover { background: #1e4d3a; }
+  .btn-dl-text { background: var(--green-light); color: var(--green-dark); }
+  .btn-dl-text:hover { background: #b7e4c7; }
+  .btn-close-modal {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    font-size: 14px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 4px;
+    width: 100%;
+    padding: 8px;
+  }
+
+  /* ======================== TOAST ======================== */
+  .toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--text-dark);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 99px;
+    font-size: 14px;
+    font-weight: 700;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 200;
+    white-space: nowrap;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+
+</style>
+</head>
+<body>
+
+<!-- Decorative leaves -->
+<div class="leaf"></div>
+<div class="leaf"></div>
+<div class="leaf"></div>
+<div class="leaf"></div>
+<div class="leaf"></div>
+
+
+<!-- ======================== INTRO SCREEN ======================== -->
+<div id="screen-intro" class="screen active">
+  <div class="card" style="text-align:center;">
+    <div class="intro-badge">🌿 性格測驗</div>
+    <div class="intro-illustration" aria-label="八種皮克敏插圖">
+      <div class="pikmin-bunch">
+        <div class="pikmin-icon pk-white"><div class="p-stem"></div><div class="p-leaf"></div><div class="p-flower"></div><div class="p-bud"></div><div class="p-head"></div><div class="p-eye-row"><div class="p-eye"></div><div class="p-eye"></div></div><div class="p-nose"></div><div class="p-body"></div><div class="p-arm left"></div><div class="p-arm right"></div><div class="p-feet"><div class="p-foot"></div><div class="p-foot"></div></div></div>
+        <div class="pikmin-icon pk-rock"><div class="p-stem"></div><div class="p-leaf"></div><div class="p-flower"></div><div class="p-bud"></div><div class="p-head"></div><div class="p-facet"></div><div class="p-eye-row"><div class="p-eye"></div><div class="p-eye"></div></div><div class="p-body"></div><div class="p-arm left"></div><div class="p-arm right"></div><div class="p-feet"><div class="p-foot"></div><div class="p-foot"></div></div></div>
+        <div class="pikmin-icon pk-winged"><div class="p-stem"></div><div class="p-leaf"></div><div class="p-flower"></div><div class="p-bud"></div><div class="p-wing left"></div><div class="p-wing right"></div><div class="p-head"></div><div class="p-eye-row"><div class="p-eye"></div><div class="p-eye"></div></div><div class="p-body"></div><div class="p-feet"><div class="p-foot"></div><div class="p-foot"></div></div></div>
+        <div class="pikmin-icon pk-blue"><div class="p-stem"></div><div class="p-leaf"></div><div class="p-flower"></div><div class="p-bud"></div><div class="p-head"></div><div class="p-eye-row"><div class="p-eye"></div><div class="p-eye"></div></div><div class="p-nose"></div><div class="p-body"></div><div class="p-arm left"></div><div class="p-arm right"></div><div class="p-feet"><div class="p-foot"></div><div class="p-foot"></div></div></div>
+        <div class="pikmin-icon pk-yellow"><div class="p-stem"></div><div class="p-leaf"></div><div class="p-flower"></div><div class="p-bud"></div><div class="p-ear left"></div><div class="p-ear right"></div><div class="p-head"></div><div class="p-eye-row"><div class="p-eye"></div><div class="p-eye"></div></div><div class="p-body"></div><div class="p-arm left"></div><div class="p-arm right"></div><div class="p-feet"><div class="p-foot"></div><div class="p-foot"></div></div></div>
+        <div class="pikmin-icon pk-red"><div class="p-stem"></div><div class="p-leaf"></div><div class="p-flower"></div><div class="p-bud"></div><div class="p-head"></div><div class="p-eye-row"><div class="p-eye"></div><div class="p-eye"></div></div><div class="p-nose"></div><div class="p-body"></div><div class="p-arm left"></div><div class="p-arm right"></div><div class="p-feet"><div class="p-foot"></div><div class="p-foot"></div></div></div>
+        <div class="pikmin-icon pk-purple"><div class="p-stem"></div><div class="p-leaf"></div><div class="p-flower"></div><div class="p-bud"></div><div class="p-spike s1"></div><div class="p-spike s2"></div><div class="p-spike s3"></div><div class="p-spike s4"></div><div class="p-head"></div><div class="p-eye-row"><div class="p-eye"></div><div class="p-eye"></div></div><div class="p-body"></div><div class="p-arm left"></div><div class="p-arm right"></div><div class="p-feet"><div class="p-foot"></div><div class="p-foot"></div></div></div>
+        <div class="pikmin-icon pk-ice"><div class="p-stem"></div><div class="p-leaf"></div><div class="p-flower"></div><div class="p-bud"></div><div class="p-head"></div><div class="p-eye-row"><div class="p-eye"></div><div class="p-eye"></div></div><div class="p-body"></div><div class="p-arm left"></div><div class="p-arm right"></div><div class="p-feet"><div class="p-foot"></div><div class="p-foot"></div></div></div>
+      </div>
+    </div>
+    <h1 class="intro-title">你是哪一種<br><span>皮克敏</span>？</h1>
+    <p class="intro-desc">
+      輸入名字，再回答幾個日常選擇題，<br>
+      看看你的靈魂到底是哪隻皮克敏在值班。
+    </p>
+    <div class="name-field">
+      <label for="player-name">你的名字</label>
+      <input id="player-name" class="name-input" type="text" maxlength="16" placeholder="例如：Eri" autocomplete="name" onkeydown="if(event.key==='Enter') startQuiz()">
+    </div>
+    <button class="btn-primary" onclick="startQuiz()">🌱 開始測驗！</button>
+    <p class="intro-meta">共 10 題 · 約需 2 分鐘</p>
+  </div>
+</div>
+
+<!-- ======================== QUESTION SCREEN ======================== -->
+<div id="screen-question" class="screen">
+  <div class="card">
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span id="q-progress-text">第 1 題</span>
+        <span id="q-progress-count">1 / 10</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="q-progress-fill" style="width:10%"></div>
+      </div>
+    </div>
+    <div class="question-num" id="q-num">QUESTION 01</div>
+    <div class="question-text" id="q-text">早上鬧鐘響第三次時，你通常會怎麼做？</div>
+    <div class="options-grid" id="q-options"></div>
+  </div>
+</div>
+
+<!-- ======================== LOADING SCREEN ======================== -->
+<div id="screen-loading" class="screen">
+  <div class="card" style="text-align:center; padding: 56px 36px;">
+    <div class="loading-title">分析中⋯</div>
+    <div class="loading-circles">
+      <div class="loading-dot"></div>
+      <div class="loading-dot"></div>
+      <div class="loading-dot"></div>
+      <div class="loading-dot"></div>
+      <div class="loading-dot"></div>
+      <div class="loading-dot"></div>
+    </div>
+    <p class="loading-sub">正在召喚皮克敏總部比對資料，請稍等一下。</p>
+  </div>
+</div>
+
+<!-- ======================== RESULT SCREEN ======================== -->
+<div id="screen-result" class="screen">
+  <div class="card result-card" id="result-card-el" style="padding-top: 52px;">
+    <div class="result-badge" id="result-badge">你是⋯</div>
+    <div class="result-secret" id="result-secret">🎺偷偷跟你說 有人也是皮克敏</div>
+    <div class="result-image-area" id="result-img-area">
+      <div class="result-image-placeholder" id="result-placeholder">
+        <span class="upload-icon">📷</span>
+        <span class="upload-text">圖片準備中<br>請放入對應檔案</span>
+      </div>
+      <img class="result-image-preview" id="result-preview-img" alt="result">
+    </div>
+    <div class="result-type-tag" id="result-type-tag">PIKMIN TYPE</div>
+    <div class="result-name" id="result-name">皮克敏名稱</div>
+    <div class="result-traits" id="result-traits"></div>
+    <div class="result-divider"></div>
+    <p class="result-desc" id="result-desc">
+      這裡會放上你的皮克敏人格分析。
+    </p>
+    <div class="radar-panel">
+      <div class="result-section-title">特質雷達圖</div>
+      <div class="radar-wrap">
+        <canvas id="result-radar" width="340" height="340"></canvas>
+      </div>
+    </div>
+    <div class="share-row">
+      <button class="btn-share btn-img-share" onclick="openShareModal('image')">📸 分享圖片</button>
+      <button class="btn-share btn-text-share" onclick="copyShareText()">📋 複製文字</button>
+    </div>
+    <button class="btn-retry" onclick="startQuiz()">🔄 再測一次</button>
+  </div>
+</div>
+
+<!-- ======================== GALLERY SCREEN ======================== -->
+<div id="screen-gallery" class="screen gallery-screen">
+  <h2 class="gallery-title">🖼️ 結果圖管理</h2>
+  <p class="gallery-sub">點選每個皮克敏來上傳對應的結果圖片</p>
+  <div class="gallery-grid" id="gallery-grid"></div>
+  <div style="text-align:center;">
+    <button class="btn-primary" style="max-width:240px; margin:0 auto;" onclick="showScreen('intro')">← 回到首頁預覽</button>
+  </div>
+</div>
+
+<!-- ======================== SHARE OVERLAY ======================== -->
+<div class="share-overlay" id="share-overlay" onclick="closeShareModal(event)">
+  <div class="share-modal" onclick="event.stopPropagation()">
+    <h3 class="share-modal-title">分享你的結果！</h3>
+    <div class="share-preview-card" id="share-preview-card">
+      <div class="share-card-inner" id="share-card-inner">
+        <div id="share-img-wrap"></div>
+        <div class="share-card-label">我是</div>
+        <div class="share-card-name" id="share-name-display">皮克敏名稱</div>
+        <div class="share-card-tagline" id="share-tagline">【佔位標語】一行短短的個性描述</div>
+        <div class="share-card-site">你是哪一種皮克敏？</div>
+      </div>
+    </div>
+    <div class="share-actions">
+      <button class="btn-dl btn-dl-img" onclick="downloadShareImage()">⬇ 下載分享圖片</button>
+      <button class="btn-dl btn-dl-text" onclick="copyShareText()">📋 複製分享文字</button>
+      <button class="btn-close-modal" onclick="closeShareModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== TOAST ======================== -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ======================== DATA ========================
+const PIKMIN = [
+  {
+    id: 'red',
+    name: '紅色皮克敏',
+    emoji: '🔴',
+    image: 'assets/results/pikmin-red.png',
+    color: '#e84545',
+    colorLight: '#fde8e8',
+    colorDark: '#9b1c1c',
+    badge: '冒險樂觀型',
+    traits: ['愛冒險', '好奇', '樂觀'],
+    tagline: '哪裡有未知，哪裡就有你一臉興奮地衝過去。',
+    desc: '你對世界充滿好奇，看到新東西就很想摸一下、試一下、闖一下。你通常偏樂觀，就算跌倒也會先說「好，至少很好玩」。',
+  },
+  {
+    id: 'yellow',
+    name: '黃色皮克敏',
+    emoji: '🟡',
+    image: 'assets/results/pikmin-yellow.png',
+    color: '#f5c842',
+    colorLight: '#fefce8',
+    colorDark: '#854d0e',
+    badge: '謹慎警戒型',
+    traits: ['謹慎', '容易受驚', '小心翼翼'],
+    tagline: '你不是膽小，你只是很認真地替人生裝防震殼。',
+    desc: '你做事前會先觀察、確認、再確認，不喜歡自己莫名其妙變成事故主角。你也確實比較容易被嚇到，但這讓你對環境變化特別敏銳。',
+  },
+  {
+    id: 'blue',
+    name: '藍色皮克敏',
+    emoji: '🔵',
+    image: 'assets/results/pikmin-blue.png',
+    color: '#4a90d9',
+    colorLight: '#eff6ff',
+    colorDark: '#1e3a5f',
+    badge: '放空漫遊型',
+    traits: ['活在自己世界', '總是張開嘴巴', '有點恍神'],
+    tagline: '你的靈魂常常先出門散步，身體還留在原地。',
+    desc: '你很常活在自己的節奏裡，外界再吵也不一定能立刻把你叫回來。看起來有點恍神、嘴巴常常開開的，但其實你只是沉浸在自己的宇宙。',
+  },
+  {
+    id: 'purple',
+    name: '紫色皮克敏',
+    emoji: '🟣',
+    image: 'assets/results/pikmin-purple.png',
+    color: '#8b5cf6',
+    colorLight: '#f5f3ff',
+    colorDark: '#4c1d95',
+    badge: '冷靜厚實型',
+    traits: ['冷靜', '能容忍煩人的事', '胖胖'],
+    tagline: '你情緒穩，耐煩度高，而且整個人很有份量。',
+    desc: '你面對煩人的事通常不會立刻炸裂，反而有種「好，我看你還能多煩」的從容。你胖胖的、穩穩的，存在感像抱枕一樣踏實。',
+  },
+  {
+    id: 'white',
+    name: '白色皮克敏',
+    emoji: '⚪',
+    image: 'assets/results/pikmin-white.png',
+    color: '#a855f7',
+    colorLight: '#fdf4ff',
+    colorDark: '#581c87',
+    badge: '小小暴怒型',
+    traits: ['渺小', '充滿怒火', '氣勢很滿'],
+    tagline: '體型不大，但怒氣值永遠不肯低調。',
+    desc: '你看起來小小一隻，好像風一吹就會飄走，但內心其實隨時都在冒火。你的怒火來得快又真實，重點是你完全不打算假裝自己很平靜。',
+  },
+  {
+    id: 'rock',
+    name: '石頭皮克敏',
+    emoji: '🪨',
+    image: 'assets/results/pikmin-rock.png',
+    color: '#6b7280',
+    colorLight: '#f9fafb',
+    colorDark: '#1f2937',
+    badge: '快樂參與型',
+    traits: ['不太聰明', '很高興來到這裡', '樸實直率'],
+    tagline: '你不一定知道發生什麼事，但你真的很開心有被揪。',
+    desc: '你不是靠機智取勝的類型，有時候甚至會慢半拍，但這完全不影響你的快樂。你散發出一種單純的開心感，像是在說「太好了，我也在現場」。',
+  },
+  {
+    id: 'winged',
+    name: '粉色皮克敏',
+    emoji: '🩷',
+    image: 'assets/results/pikmin-pink.png',
+    color: '#f472b6',
+    colorLight: '#fdf2f8',
+    colorDark: '#831843',
+    badge: '效率厭世型',
+    traits: ['做事有效率', '缺乏動力', '就是這樣'],
+    tagline: '事情你會做好，只是全程都像在對世界淡淡翻白眼。',
+    desc: '你做事其實很有效率，路線短、動作快、收尾也俐落，只是情緒上不太想投入太多。你對很多事的態度都像在說「嗯，就是這樣」，懶得大驚小怪。',
+  },
+  {
+    id: 'ice',
+    name: '冰凍皮克敏',
+    emoji: '🧊',
+    image: 'assets/results/pikmin-ice.png',
+    color: '#5bc4e8',
+    colorLight: '#e8f8fd',
+    colorDark: '#1a5a72',
+    badge: '悠閒衝撞型',
+    traits: ['悠閒', '魯莽', '可愛'],
+    tagline: '你看起來慢悠悠，結果一出手就很有可能直接撞上去。',
+    desc: '你平常給人的感覺很悠閒，整體畫風還有點可愛無害，但行動時偶爾會突然變得很魯莽。你像一顆冰塊小碰碰車，可愛歸可愛，撞人也是真的。',
+  }
+];
+
+const TRAIT_LABELS = ['行動值', '創意值', '穩定值', '洞察值', '自由值'];
+const RESULT_PRESETS = {
+  red:    [95, 60, 58, 48, 56],
+  yellow: [72, 96, 54, 62, 82],
+  blue:   [58, 56, 94, 78, 52],
+  purple: [88, 52, 86, 60, 46],
+  white:  [54, 70, 60, 96, 68],
+  rock:   [84, 44, 90, 56, 42],
+  winged: [56, 84, 58, 70, 96],
+  ice:    [60, 54, 92, 86, 48]
+};
+
+const QUESTIONS = [
+  {
+    text: '突然多出半天空檔，你會？',
+    options: [
+      { text: '去沒去過的地方', scores: [6,1,0,0,0,1,1,1] },
+      { text: '待在熟悉的地方', scores: [0,6,1,1,0,1,0,1] },
+      { text: '放空到時間消失', scores: [0,0,6,1,1,0,1,2] },
+      { text: '先把待辦清掉', scores: [1,1,0,0,0,0,6,2] }
+    ]
+  },
+  {
+    text: '半夜聽到怪聲，你會？',
+    options: [
+      { text: '嚇到靈魂出竅', scores: [0,6,0,1,1,0,0,1] },
+      { text: '立刻去看是什麼', scores: [6,0,0,0,1,1,0,2] },
+      { text: '愣住但繼續放空', scores: [0,0,6,1,0,0,0,1] },
+      { text: '慢慢走但撞到東西', scores: [0,1,0,0,0,0,1,6] }
+    ]
+  },
+  {
+    text: '群組有人重複問問題，你會？',
+    options: [
+      { text: '冷靜再講一次', scores: [0,1,0,1,0,1,0,6] },
+      { text: '內心火山爆發', scores: [0,0,0,1,6,0,0,0] },
+      { text: '沒懂但熱心回覆', scores: [0,0,1,0,0,6,1,0] },
+      { text: '整理重點丟出去', scores: [0,1,0,0,0,1,6,1] }
+    ]
+  },
+  {
+    text: '看到陌生新品，你會？',
+    options: [
+      { text: '直接買來試試', scores: [6,0,0,1,0,0,1,1] },
+      { text: '先查評價再說', scores: [0,6,0,1,0,1,0,1] },
+      { text: '路過但沒注意', scores: [0,0,6,0,0,0,1,1] },
+      { text: '拿最省事的', scores: [0,0,0,0,0,1,6,2] }
+    ]
+  },
+  {
+    text: '行程突然被改掉，你會？',
+    options: [
+      { text: '開始緊張', scores: [0,6,0,1,0,0,1,1] },
+      { text: '默默接受', scores: [0,1,0,1,0,1,0,6] },
+      { text: '表面沒事內心怒', scores: [1,0,0,1,6,0,0,0] },
+      { text: '好吧就這樣', scores: [0,0,0,0,0,0,6,1] }
+    ]
+  },
+  {
+    text: '朋友約你去陌生地點，你會？',
+    options: [
+      { text: '馬上答應', scores: [6,0,0,0,0,1,1,1] },
+      { text: '先問清楚細節', scores: [0,6,0,1,0,1,0,2] },
+      { text: '被約就很開心', scores: [0,0,0,0,0,6,1,1] },
+      { text: '答應但亂衝', scores: [1,0,0,0,0,0,1,6] }
+    ]
+  },
+  {
+    text: '大家都在忙時，你像？',
+    options: [
+      { text: '嘴開開地旁觀', scores: [0,0,6,1,0,0,0,1] },
+      { text: '默默扛雜事', scores: [0,1,0,1,0,1,0,6] },
+      { text: '快速做完但無感', scores: [0,0,0,0,0,0,6,2] },
+      { text: '覺得一切很新奇', scores: [6,1,0,0,0,0,1,1] }
+    ]
+  },
+  {
+    text: '被說「你好小一隻」，你想？',
+    options: [
+      { text: '承認但火大！', scores: [0,0,0,0,6,0,0,0] },
+      { text: '嘴巴張開不回應', scores: [0,0,6,0,0,0,0,0] },
+      { text: '我哪裡矮？', scores: [4,0,0,0,2,0,0,0] },
+      { text: '根本沒在聽', scores: [0,0,4,0,0,1,0,1] }
+    ]
+  },
+  {
+    text: '你做事最常被說？',
+    options: [
+      { text: '很小心', scores: [0,6,0,1,0,1,0,1] },
+      { text: '很能忍', scores: [0,1,0,0,0,1,0,6] },
+      { text: '快但沒靈魂', scores: [0,0,0,0,0,0,6,1] },
+      { text: '悠閒但亂來', scores: [0,0,0,0,0,0,1,6] }
+    ]
+  },
+  {
+    text: '哪句最像你？',
+    options: [
+      { text: '去看看再說', scores: [6,1,0,0,0,0,1,1] },
+      { text: '我剛在想別的', scores: [0,0,6,0,0,0,1,1] },
+      { text: '我真的很高興', scores: [0,0,0,0,0,6,0,1] },
+      { text: '我現在很生氣', scores: [0,0,0,1,6,0,0,0] }
+    ]
+  }
+];
+
+const RECENT_RESULT_POOL = [
+  { name: '小葵', result: '紅色皮克敏' },
+  { name: 'Momo', result: '黃色皮克敏' },
+  { name: '阿寧', result: '藍色皮克敏' },
+  { name: 'Nini', result: '紫色皮克敏' },
+  { name: '布丁', result: '白色皮克敏' },
+  { name: '小石', result: '石頭皮克敏' },
+  { name: 'Eli', result: '粉色皮克敏' },
+  { name: '米花', result: '冰凍皮克敏' }
+];
+
+// ======================== STATE ========================
+let currentQuestion = 0;
+let scores = [0,0,0,0,0,0,0,0];
+let currentResultIdx = 0;
+let playerName = '';
+let currentMetrics = [];
+const uploadedImages = {}; // 保留給管理頁備用；結果頁圖片改由 PIKMIN.image 指定
+
+// ======================== SCREEN NAV ========================
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  if (name === 'gallery') renderGallery();
+}
+
+// ======================== QUIZ LOGIC ========================
+function startQuiz() {
+  const input = document.getElementById('player-name');
+  const typedName = input ? input.value.trim() : '';
+  if (!typedName) {
+    showToast('請先輸入名字，皮克敏需要知道今天跟誰出任務 🌱');
+    if (input) input.focus();
+    return;
+  }
+  playerName = typedName;
+  currentQuestion = 0;
+  scores = [0,0,0,0,0,0,0,0];
+  showScreen('question');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[currentQuestion];
+  const qNum = currentQuestion + 1;
+  const total = QUESTIONS.length;
+  document.getElementById('q-num').textContent = 'QUESTION ' + String(qNum).padStart(2,'0');
+  document.getElementById('q-text').textContent = q.text;
+  document.getElementById('q-progress-text').textContent = '第 ' + qNum + ' 題';
+  document.getElementById('q-progress-count').textContent = qNum + ' / ' + total;
+  document.getElementById('q-progress-fill').style.width = (qNum / total * 100) + '%';
+
+  const optDiv = document.getElementById('q-options');
+  optDiv.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.textContent = opt.text;
+    btn.onclick = () => selectOption(i, btn);
+    optDiv.appendChild(btn);
+  });
+}
+
+function selectOption(idx, btn) {
+  document.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const q = QUESTIONS[currentQuestion];
+  q.options[idx].scores.forEach((s, i) => scores[i] += s);
+  setTimeout(() => nextQuestion(), 400);
+}
+
+function nextQuestion() {
+  currentQuestion++;
+  if (currentQuestion < QUESTIONS.length) {
+    showScreen('question');
+    renderQuestion();
+  } else {
+    showScreen('loading');
+    setTimeout(() => {
+      const winner = scores.indexOf(Math.max(...scores));
+      showResultScreen(winner);
+    }, 2200);
+  }
+}
+
+// ======================== RESULT ========================
+function renderResultSecret(currentPikmin) {
+  const secretEl = document.getElementById('result-secret');
+  if (!secretEl) return;
+
+  // 未來綁資料庫時，可把 RECENT_RESULT_POOL 替換成後端回傳的近期結果清單
+  const pool = Array.isArray(RECENT_RESULT_POOL) && RECENT_RESULT_POOL.length
+    ? RECENT_RESULT_POOL
+    : [{ name: playerName || '某位路過的人', result: currentPikmin.name }];
+  const picked = pool[Math.floor(Math.random() * pool.length)];
+  secretEl.textContent = `🎺偷偷跟你說 ${picked.name}是${picked.result}`;
+}
+
+function showResultScreen(idx) {
+  currentResultIdx = idx;
+  const p = PIKMIN[idx];
+  showScreen('result');
+
+  // Style the card
+  const card = document.getElementById('result-card-el');
+  card.style.borderTop = `6px solid ${p.color}`;
+
+  // Badge
+  const badge = document.getElementById('result-badge');
+  badge.textContent = '你是…' + p.badge;
+  badge.style.background = p.color;
+  badge.style.color = 'white';
+
+  renderResultSecret(p);
+
+  // Image area
+  const imgArea = document.getElementById('result-img-area');
+  imgArea.style.background = p.colorLight;
+  imgArea.style.borderColor = p.color;
+
+  // Result image: place files in /assets/results/ using the filenames defined in PIKMIN.image
+  const previewImg = document.getElementById('result-preview-img');
+  const placeholder = document.getElementById('result-placeholder');
+  previewImg.onload = () => {
+    previewImg.style.display = 'block';
+    placeholder.style.display = 'none';
+  };
+  previewImg.onerror = () => {
+    previewImg.style.display = 'none';
+    placeholder.style.display = 'flex';
+    placeholder.style.background = p.colorLight;
+    placeholder.querySelector('.upload-text').style.color = p.colorDark;
+  };
+  previewImg.src = p.image;
+
+  // Text
+  document.getElementById('result-type-tag').textContent = p.id.toUpperCase() + ' PIKMIN';
+  document.getElementById('result-type-tag').style.color = p.color;
+  document.getElementById('result-name').textContent = p.name;
+  const displayName = playerName || '你';
+  document.getElementById('result-desc').textContent = `${displayName}，${p.desc}`;
+
+  // Traits
+  const traitsEl = document.getElementById('result-traits');
+  traitsEl.innerHTML = '';
+  p.traits.forEach(t => {
+    const pill = document.createElement('span');
+    pill.className = 'trait-pill';
+    pill.textContent = t;
+    pill.style.background = p.colorLight;
+    pill.style.color = p.colorDark;
+    traitsEl.appendChild(pill);
+  });
+
+  renderResultInsights(idx);
+}
+
+
+function getTraitMetricsByScores(idx) {
+  const p = PIKMIN[idx];
+  const totalScore = scores.reduce((sum, n) => sum + n, 0);
+  let values;
+
+  if (!totalScore) {
+    values = RESULT_PRESETS[p.id] || [70, 70, 70, 70, 70];
+  } else {
+    const raw = [
+      scores[0] * 1.2 + scores[3] * 0.9 + scores[5] * 0.8,
+      scores[1] * 1.2 + scores[6] * 0.9 + scores[4] * 0.4,
+      scores[2] * 1.1 + scores[7] * 1.1 + scores[3] * 0.7 + scores[5] * 0.7,
+      scores[4] * 1.2 + scores[7] * 0.9 + scores[2] * 0.5,
+      scores[6] * 1.2 + scores[1] * 0.8 + scores[0] * 0.4
+    ];
+    const maxRaw = Math.max(...raw) || 1;
+    values = raw.map(v => Math.max(32, Math.min(100, Math.round(v / maxRaw * 100))));
+  }
+
+  return TRAIT_LABELS.map((label, i) => ({ label, value: values[i] }));
+}
+
+function renderResultInsights(idx) {
+  const p = PIKMIN[idx];
+  currentMetrics = getTraitMetricsByScores(idx);
+  drawRadarChart(currentMetrics, p.color);
+}
+
+function drawRadarChart(metrics, color) {
+  const canvas = document.getElementById('result-radar');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  const cx = w / 2;
+  const cy = h / 2 + 8;
+  const radius = 102;
+  const levels = 5;
+  const count = metrics.length;
+  const startAngle = -Math.PI / 2;
+
+  function pointAt(index, r) {
+    const angle = startAngle + (Math.PI * 2 / count) * index;
+    return { x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r };
+  }
+
+  ctx.lineWidth = 1;
+  for (let level = 1; level <= levels; level++) {
+    const r = radius * (level / levels);
+    ctx.beginPath();
+    for (let i = 0; i < count; i++) {
+      const pt = pointAt(i, r);
+      if (i === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = level % 2 === 0 ? 'rgba(45,106,79,.035)' : 'rgba(45,106,79,.055)';
+    ctx.strokeStyle = 'rgba(45,106,79,.14)';
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  for (let i = 0; i < count; i++) {
+    const pt = pointAt(i, radius);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(pt.x, pt.y);
+    ctx.strokeStyle = 'rgba(45,106,79,.16)';
+    ctx.stroke();
+  }
+
+  ctx.beginPath();
+  metrics.forEach((m, i) => {
+    const pt = pointAt(i, radius * (m.value / 100));
+    if (i === 0) ctx.moveTo(pt.x, pt.y);
+    else ctx.lineTo(pt.x, pt.y);
+  });
+  ctx.closePath();
+  const rgb = hexToRgb(color);
+  ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, .24)`;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.fill();
+  ctx.stroke();
+
+  metrics.forEach((m, i) => {
+    const pt = pointAt(i, radius * (m.value / 100));
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#fff';
+    ctx.stroke();
+  });
+
+  ctx.textAlign = 'center';
+  metrics.forEach((m, i) => {
+    const pt = pointAt(i, radius + 31);
+    ctx.fillStyle = '#1b3a2d';
+    ctx.font = '800 14px "Noto Sans TC", sans-serif';
+    ctx.fillText(m.label, pt.x, pt.y + 4);
+  });
+}
+
+function hexToRgb(hex) {
+  const value = hex.replace('#', '');
+  const full = value.length === 3 ? value.split('').map(v => v + v).join('') : value;
+  const num = parseInt(full, 16);
+  return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text).catch(() => fallbackCopyText(text));
+  }
+  return fallbackCopyText(text);
+}
+
+function fallbackCopyText(text) {
+  return new Promise((resolve, reject) => {
+    const el = document.createElement('textarea');
+    el.value = text;
+    el.setAttribute('readonly', '');
+    el.style.position = 'fixed';
+    el.style.top = '-9999px';
+    el.style.left = '-9999px';
+    document.body.appendChild(el);
+    el.focus();
+    el.select();
+    try {
+      const ok = document.execCommand('copy');
+      document.body.removeChild(el);
+      ok ? resolve() : reject(new Error('copy failed'));
+    } catch (err) {
+      document.body.removeChild(el);
+      reject(err);
+    }
+  });
+}
+
+function handleResultImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const p = PIKMIN[currentResultIdx];
+    uploadedImages[p.id] = e.target.result;
+    const previewImg = document.getElementById('result-preview-img');
+    previewImg.src = e.target.result;
+    previewImg.style.display = 'block';
+    document.getElementById('result-placeholder').style.display = 'none';
+    // Also update gallery if rendered
+    const galleryImg = document.querySelector(`.gallery-item[data-id="${p.id}"] .gallery-user-img`);
+    if (galleryImg) {
+      galleryImg.src = e.target.result;
+      galleryImg.style.display = 'block';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// ======================== GALLERY ========================
+function renderGallery() {
+  const grid = document.getElementById('gallery-grid');
+  grid.innerHTML = '';
+  PIKMIN.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'gallery-item';
+    item.dataset.id = p.id;
+    item.innerHTML = `
+      <div class="gallery-img-wrap" style="background:${p.colorLight}">
+        <div class="gallery-img-bg" style="background:${p.color}"></div>
+        <div class="gallery-pikmin-preview">${p.emoji}</div>
+        <img class="gallery-user-img" ${uploadedImages[p.id] ? `src="${uploadedImages[p.id]}" style="display:block"` : ''} alt="${p.name}">
+        <span class="gallery-upload-hint">點擊上傳</span>
+      </div>
+      <div class="gallery-item-name">${p.name}</div>
+      <input type="file" class="gallery-upload-input" accept="image/*" data-pikmin="${p.id}">
+    `;
+    item.querySelector('.gallery-img-wrap').onclick = () => item.querySelector('.gallery-upload-input').click();
+    item.querySelector('.gallery-upload-input').onchange = (e) => handleGalleryUpload(e, p.id);
+    grid.appendChild(item);
+  });
+}
+
+function handleGalleryUpload(e, pikminId) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    uploadedImages[pikminId] = ev.target.result;
+    const item = document.querySelector(`.gallery-item[data-id="${pikminId}"]`);
+    const img = item.querySelector('.gallery-user-img');
+    img.src = ev.target.result;
+    img.style.display = 'block';
+    showToast('✅ ' + PIKMIN.find(p=>p.id===pikminId).name + ' 圖片已上傳！');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ======================== SHARE MODAL ========================
+function openShareModal(type) {
+  const p = PIKMIN[currentResultIdx];
+  const inner = document.getElementById('share-card-inner');
+  inner.style.background = p.color;
+
+  // Image
+  const imgWrap = document.getElementById('share-img-wrap');
+  imgWrap.innerHTML = `<img class="share-card-img" src="${p.image}" alt="${p.name}" onerror="this.outerHTML='<div class=&quot;share-card-placeholder-img&quot; style=&quot;background:rgba(255,255,255,0.2)&quot;>${p.emoji}</div>'">`;
+
+  document.getElementById('share-name-display').textContent = p.name;
+  document.getElementById('share-tagline').textContent = sanitizeNoEllipsis(p.tagline);
+  document.getElementById('share-overlay').classList.add('open');
+}
+
+function closeShareModal(e) {
+  if (!e || e.target === document.getElementById('share-overlay')) {
+    document.getElementById('share-overlay').classList.remove('open');
+  }
+}
+
+async function downloadShareImage() {
+  showToast('🎨 準備中...');
+  try {
+    const card = document.getElementById('share-card-inner');
+    const canvas = await html2canvas(card, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: PIKMIN[currentResultIdx].color,
+    });
+    const link = document.createElement('a');
+    link.download = `我是${PIKMIN[currentResultIdx].name}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('✅ 圖片已下載！');
+  } catch(err) {
+    showToast('⚠️ 下載失敗，請截圖分享');
+  }
+}
+
+function sanitizeNoEllipsis(str) {
+  return (str || '').replace(/[⋯…]/g, '');
+}
+
+function getTwoLineAnalysis(text) {
+  const clean = sanitizeNoEllipsis(text);
+  const parts = clean.split('。').map(s => s.trim()).filter(Boolean);
+  const first = parts[0] ? parts[0] + '。' : '';
+  const second = parts[1] ? parts[1] + '。' : '';
+  return [first, second].filter(Boolean);
+}
+
+function copyShareText() {
+  const p = PIKMIN[currentResultIdx];
+  const displayName = playerName || '你';
+  const lines = getTwoLineAnalysis(p.desc);
+  const text = `🌿 ${displayName} 的皮克敏測驗結果：${p.name}
+
+${sanitizeNoEllipsis(p.tagline)}
+${lines[0] || ''}
+${lines[1] || ''}
+
+你是哪一種皮克敏？快來測測看！`;
+
+  copyToClipboard(text)
+    .then(() => showToast('✅ 分享文字已複製！'))
+    .catch(() => showToast('⚠️ 複製失敗，請手動選取文字'));
+}
+
+// ======================== TOAST ========================
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
