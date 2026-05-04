@@ -1178,6 +1178,14 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ======================== SUPABASE REST API ========================
+// 注意：這裡使用的是 anon public key，請不要把 service_role key 放到前端。
+const SUPABASE_REST_URL = 'https://gxblxabyipljcxjbbwsi.supabase.co/rest/v1';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4Ymx4YWJ5aXBsamN4amJid3NpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4Nzg3NTQsImV4cCI6MjA5MzQ1NDc1NH0.3ufbea5gJVkwx6Unayy-278KA1bSAeJflkK-3-g8kWM';
+const SUPABASE_TABLE = 'pikmin_quiz_results';
+const SUPABASE_ENDPOINT = `${SUPABASE_REST_URL.replace(/\/$/, '')}/${SUPABASE_TABLE}`;
+let hasSavedCurrentResult = false;
+
 // ======================== DATA ========================
 const PIKMIN = [
   {
@@ -1429,6 +1437,7 @@ function startQuiz() {
   playerName = typedName;
   currentQuestion = 0;
   scores = [0,0,0,0,0,0,0,0];
+  hasSavedCurrentResult = false;
   showScreen('question');
   renderQuestion();
 }
@@ -1477,11 +1486,39 @@ function nextQuestion() {
 }
 
 // ======================== RESULT ========================
-function renderResultSecret(currentPikmin) {
+async function fetchRandomRecentResultFromSupabase() {
+  try {
+    const res = await fetch(`${SUPABASE_ENDPOINT}?select=name,result_name&order=created_at.desc&limit=30`, {
+      method: 'GET',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      }
+    });
+
+    if (!res.ok) throw new Error(`Supabase select failed: ${res.status}`);
+    const data = await res.json();
+    if (!Array.isArray(data) || !data.length) return null;
+
+    return data[Math.floor(Math.random() * data.length)];
+  } catch (err) {
+    console.warn('讀取 Supabase 結果失敗，改用假資料：', err);
+    return null;
+  }
+}
+
+async function renderResultSecret(currentPikmin) {
   const secretEl = document.getElementById('result-secret');
   if (!secretEl) return;
 
-  // 未來綁資料庫時，可把 RECENT_RESULT_POOL 替換成後端回傳的近期結果清單
+  secretEl.textContent = '🎺偷偷跟你說 皮克敏小隊正在翻資料';
+
+  const dbItem = await fetchRandomRecentResultFromSupabase();
+  if (dbItem && dbItem.name && dbItem.result_name) {
+    secretEl.textContent = `🎺偷偷跟你說 ${dbItem.name}是${dbItem.result_name}`;
+    return;
+  }
+
   const pool = Array.isArray(RECENT_RESULT_POOL) && RECENT_RESULT_POOL.length
     ? RECENT_RESULT_POOL
     : [{ name: playerName || '某位路過的人', result: currentPikmin.name }];
@@ -1571,10 +1608,47 @@ function getTraitMetricsByScores(idx) {
   return TRAIT_LABELS.map((label, i) => ({ label, value: values[i] }));
 }
 
+async function saveQuizResultToSupabase(p) {
+  if (hasSavedCurrentResult) return;
+
+  try {
+    const payload = {
+      name: playerName || '匿名皮克敏',
+      result_id: p.id,
+      result_name: p.name,
+      scores: scores,
+      metrics: currentMetrics,
+      created_at: new Date().toISOString()
+    };
+
+    const res = await fetch(SUPABASE_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Supabase insert failed: ${res.status} ${errorText}`);
+    }
+
+    hasSavedCurrentResult = true;
+    console.log('測驗結果已寫入 Supabase');
+  } catch (err) {
+    console.warn('寫入 Supabase 失敗：', err);
+  }
+}
+
 function renderResultInsights(idx) {
   const p = PIKMIN[idx];
   currentMetrics = getTraitMetricsByScores(idx);
   drawRadarChart(currentMetrics, p.color);
+  saveQuizResultToSupabase(p);
 }
 
 function drawRadarChart(metrics, color) {
