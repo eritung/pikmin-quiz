@@ -949,6 +949,16 @@
     justify-content: center;
     font-size: 44px;
   }
+  .share-card-player {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.18);
+    color: white;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
   .share-card-label {
     font-size: 11px;
     font-weight: 800;
@@ -968,6 +978,7 @@
     font-size: 13px;
     color: rgba(255,255,255,0.9);
     line-height: 1.5;
+    white-space: pre-line;
   }
   .share-card-site {
     font-size: 11px;
@@ -1160,7 +1171,8 @@
     <div class="share-preview-card" id="share-preview-card">
       <div class="share-card-inner" id="share-card-inner">
         <div id="share-img-wrap"></div>
-        <div class="share-card-label" id="share-player-label">我是</div>
+        <div class="share-card-player" id="share-player-display">你的名字</div>
+        <div class="share-card-label">你是</div>
         <div class="share-card-name" id="share-name-display">皮克敏名稱</div>
         <div class="share-card-tagline" id="share-tagline">【佔位標語】一行短短的個性描述</div>
         <div class="share-card-site">你是哪一種皮克敏？</div>
@@ -1184,9 +1196,7 @@ const SUPABASE_REST_URL = 'https://gxblxabyipljcxjbbwsi.supabase.co/rest/v1';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4Ymx4YWJ5aXBsamN4amJid3NpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4Nzg3NTQsImV4cCI6MjA5MzQ1NDc1NH0.3ufbea5gJVkwx6Unayy-278KA1bSAeJflkK-3-g8kWM';
 const SUPABASE_TABLE = 'pikmin_quiz_results';
 const SUPABASE_ENDPOINT = `${SUPABASE_REST_URL.replace(/\/$/, '')}/${SUPABASE_TABLE}`;
-const BASE_SHARE_URL = 'https://eritung.github.io/pikmin-quiz/';
 let hasSavedCurrentResult = false;
-let isSharedLinkMode = false;
 
 // ======================== DATA ========================
 const PIKMIN = [
@@ -1332,7 +1342,7 @@ const QUESTIONS = [
     options: [
       { text: '冷靜再講一次', scores: [0,1,0,6,0,1,0,0] },
       { text: '內心火山爆發', scores: [0,0,0,1,6,0,0,0] },
-      { text: '沒懂但熱心回覆', scores: [0,0,1,0,0,6,1,0] },
+      { text: '裝作沒看到', scores: [0,0,4,0,0,0,5,1] },
       { text: '整理重點丟出去', scores: [0,1,0,1,0,0,6,0] }
     ]
   },
@@ -1359,7 +1369,7 @@ const QUESTIONS = [
     options: [
       { text: '馬上答應', scores: [6,0,0,0,0,1,1,1] },
       { text: '先問清楚細節', scores: [0,6,0,1,0,1,0,1] },
-      { text: '被約就很開心', scores: [1,0,0,0,0,6,1,1] },
+      { text: '蛤 不要', scores: [0,4,0,0,2,0,3,0] },
       { text: '介入行程安排', scores: [1,0,0,0,0,0,6,1] }
     ]
   },
@@ -1420,56 +1430,67 @@ let playerName = '';
 let currentMetrics = [];
 const uploadedImages = {}; // 保留給管理頁備用；結果頁圖片改由 PIKMIN.image 指定
 
-// ======================== SCREEN NAV ========================
-function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + name).classList.add('active');
-  if (name === 'gallery') renderGallery();
-  if (name === 'intro' || name === 'question' || name === 'loading') {
-    history.replaceState({}, '', BASE_SHARE_URL);
-  }
+function getBaseQuizUrl() {
+  return `${window.location.origin}${window.location.pathname}`;
 }
 
-function getResultShareUrl(p, includeName = true) {
-  const url = new URL(BASE_SHARE_URL);
-  url.searchParams.set('result', p.id);
-  if (includeName && playerName) {
-    url.searchParams.set('name', playerName);
-  }
+function buildResultUrl(pikminId, name = '') {
+  const url = new URL(getBaseQuizUrl());
+  if (pikminId) url.searchParams.set('result', pikminId);
+  const cleanName = (name || '').trim();
+  if (cleanName) url.searchParams.set('name', cleanName);
   return url.toString();
 }
 
-function updateResultUrl(p) {
-  history.replaceState({}, '', getResultShareUrl(p));
+function updateResultUrl(pikminId, name = '') {
+  history.replaceState({}, '', buildResultUrl(pikminId, name));
 }
 
-function formatShareCardText(str) {
-  return sanitizeNoEllipsis(str).replace(/([,，])/g, '$1\n');
+function escapeHtml(str) {
+  return String(str || '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[ch]));
 }
 
-function initFromUrl() {
-  const url = new URL(window.location.href);
-  const resultId = url.searchParams.get('result');
+function formatShareTextWithBreaks(str) {
+  const clean = escapeHtml(sanitizeNoEllipsis(str));
+  return clean.replace(/[，,]\s*/g, '<br>');
+}
+
+function tryOpenSharedResult() {
+  const params = new URLSearchParams(window.location.search);
+  const resultId = params.get('result');
   if (!resultId) return;
 
   const idx = PIKMIN.findIndex(p => p.id === resultId);
   if (idx === -1) return;
 
-  const sharedName = url.searchParams.get('name');
-  if (sharedName) {
-    playerName = decodeURIComponent(sharedName);
-    const nameInput = document.getElementById('player-name');
-    if (nameInput) nameInput.value = playerName;
+  const name = params.get('name');
+  if (name) {
+    playerName = name.trim();
+    const input = document.getElementById('player-name');
+    if (input) input.value = playerName;
   }
 
-  isSharedLinkMode = true;
-  currentQuestion = 0;
+  currentQuestion = QUESTIONS.length;
   scores = [0,0,0,0,0,0,0,0];
   showResultScreen(idx);
 }
 
+// ======================== SCREEN NAV ========================
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  if (name === 'gallery') renderGallery();
+}
+
 // ======================== QUIZ LOGIC ========================
 function startQuiz() {
+  history.replaceState({}, '', getBaseQuizUrl());
   const input = document.getElementById('player-name');
   const typedName = input ? input.value.trim() : '';
   if (!typedName) {
@@ -1573,7 +1594,6 @@ function showResultScreen(idx) {
   currentResultIdx = idx;
   const p = PIKMIN[idx];
   showScreen('result');
-  updateResultUrl(p);
 
   // Style the card
   const card = document.getElementById('result-card-el');
@@ -1592,7 +1612,7 @@ function showResultScreen(idx) {
   imgArea.style.background = p.colorLight;
   imgArea.style.borderColor = p.color;
 
-  // Result image: place files in the same folder as index.html, using the filenames defined in PIKMIN.image
+  // Result image: place files in /assets/results/ using the filenames defined in PIKMIN.image
   const previewImg = document.getElementById('result-preview-img');
   const placeholder = document.getElementById('result-placeholder');
   previewImg.onload = () => {
@@ -1613,6 +1633,7 @@ function showResultScreen(idx) {
   document.getElementById('result-name').textContent = p.name;
   const displayName = playerName || '你';
   document.getElementById('result-desc').textContent = `${displayName}，${p.desc}`;
+  updateResultUrl(p.id, playerName);
 
   // Traits
   const traitsEl = document.getElementById('result-traits');
@@ -1692,9 +1713,7 @@ function renderResultInsights(idx) {
   const p = PIKMIN[idx];
   currentMetrics = getTraitMetricsByScores(idx);
   drawRadarChart(currentMetrics, p.color);
-  if (!isSharedLinkMode) {
-    saveQuizResultToSupabase(p);
-  }
+  saveQuizResultToSupabase(p);
 }
 
 function drawRadarChart(metrics, color) {
@@ -1882,10 +1901,9 @@ function openShareModal(type) {
   const imgWrap = document.getElementById('share-img-wrap');
   imgWrap.innerHTML = `<img class="share-card-img" src="${p.image}" alt="${p.name}" onerror="this.outerHTML='<div class=&quot;share-card-placeholder-img&quot; style=&quot;background:rgba(255,255,255,0.2)&quot;>${p.emoji}</div>'">`;
 
-  const displayName = playerName || '你';
-  document.getElementById('share-player-label').textContent = `${displayName} 測出的是`;
+  document.getElementById('share-player-display').textContent = playerName ? `${playerName} 的結果` : '你的測驗結果';
   document.getElementById('share-name-display').textContent = p.name;
-  document.getElementById('share-tagline').textContent = formatShareCardText(p.tagline);
+  document.getElementById('share-tagline').innerHTML = formatShareTextWithBreaks(p.tagline);
   document.getElementById('share-overlay').classList.add('open');
 }
 
@@ -1930,6 +1948,7 @@ function copyShareText() {
   const p = PIKMIN[currentResultIdx];
   const displayName = playerName || '你';
   const lines = getTwoLineAnalysis(p.desc);
+  const shareUrl = buildResultUrl(p.id, playerName);
   const text = `🌿 ${displayName} 的皮克敏測驗結果：${p.name}
 
 ${sanitizeNoEllipsis(p.tagline)}
@@ -1937,7 +1956,7 @@ ${lines[0] || ''}
 ${lines[1] || ''}
 
 你是哪一種皮克敏？快來測測看！
-${getResultShareUrl(p)}`;
+${shareUrl}`;
 
   copyToClipboard(text)
     .then(() => showToast('✅ 分享文字已複製！'))
@@ -1951,8 +1970,6 @@ function showToast(msg) {
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 2500);
 }
-
-initFromUrl();
 </script>
 </body>
 </html>
