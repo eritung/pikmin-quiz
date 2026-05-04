@@ -1192,7 +1192,7 @@ const PIKMIN = [
     id: 'red',
     name: '紅色皮克敏',
     emoji: '🔴',
-    image: 'assets/results/pikmin-red.png',
+    image: 'pikmin-red.png',
     color: '#e84545',
     colorLight: '#fde8e8',
     colorDark: '#9b1c1c',
@@ -1205,7 +1205,7 @@ const PIKMIN = [
     id: 'yellow',
     name: '黃色皮克敏',
     emoji: '🟡',
-    image: 'assets/results/pikmin-yellow.png',
+    image: 'pikmin-yellow.png',
     color: '#f5c842',
     colorLight: '#fefce8',
     colorDark: '#854d0e',
@@ -1218,7 +1218,7 @@ const PIKMIN = [
     id: 'blue',
     name: '藍色皮克敏',
     emoji: '🔵',
-    image: 'assets/results/pikmin-blue.png',
+    image: 'pikmin-blue.png',
     color: '#4a90d9',
     colorLight: '#eff6ff',
     colorDark: '#1e3a5f',
@@ -1231,7 +1231,7 @@ const PIKMIN = [
     id: 'purple',
     name: '紫色皮克敏',
     emoji: '🟣',
-    image: 'assets/results/pikmin-purple.png',
+    image: 'pikmin-purple.png',
     color: '#8b5cf6',
     colorLight: '#f5f3ff',
     colorDark: '#4c1d95',
@@ -1244,7 +1244,7 @@ const PIKMIN = [
     id: 'white',
     name: '白色皮克敏',
     emoji: '⚪',
-    image: 'assets/results/pikmin-white.png',
+    image: 'pikmin-white.png',
     color: '#a855f7',
     colorLight: '#fdf4ff',
     colorDark: '#581c87',
@@ -1257,7 +1257,7 @@ const PIKMIN = [
     id: 'rock',
     name: '石頭皮克敏',
     emoji: '🪨',
-    image: 'assets/results/pikmin-rock.png',
+    image: 'pikmin-rock.png',
     color: '#6b7280',
     colorLight: '#f9fafb',
     colorDark: '#1f2937',
@@ -1270,7 +1270,7 @@ const PIKMIN = [
     id: 'winged',
     name: '粉色皮克敏',
     emoji: '🩷',
-    image: 'assets/results/pikmin-pink.png',
+    image: 'pikmin-pink.png',
     color: '#f472b6',
     colorLight: '#fdf2f8',
     colorDark: '#831843',
@@ -1283,7 +1283,7 @@ const PIKMIN = [
     id: 'ice',
     name: '冰凍皮克敏',
     emoji: '🧊',
-    image: 'assets/results/pikmin-ice.png',
+    image: 'pikmin-ice.png',
     color: '#5bc4e8',
     colorLight: '#e8f8fd',
     colorDark: '#1a5a72',
@@ -1310,44 +1310,44 @@ const QUESTIONS = [
   {
     text: '突然多出半天空檔，你會？',
     options: [
-      { text: '去沒去過的地方', scores: [6,1,0,0,0,1,1,1] },
-      { text: '待在熟悉的地方', scores: [0,6,1,1,0,1,0,1] },
-      { text: '放空到時間消失', scores: [0,0,6,1,1,0,1,2] },
-      { text: '先把待辦清掉', scores: [1,1,0,0,0,0,6,2] }
+      { text: '去沒去過的地方探險', scores: [6,1,0,0,0,1,1,1] },
+      { text: '立刻回家耍廢', scores: [0,1,3,0,0,2,0,2] },
+      { text: '找附近咖啡廳坐坐', scores: [0,1,5,1,0,0,1,2] },
+      { text: '先把待辦清掉', scores: [1,1,0,0,0,0,6,1] }
     ]
   },
   {
-    text: '半夜聽到怪聲，你會？',
+    text: '半夜要去廁所，但在路上聽到怪聲，你會？',
     options: [
-      { text: '嚇到靈魂出竅', scores: [0,6,0,1,1,0,0,1] },
+      { text: '嚇到哭出來', scores: [0,6,0,0,1,0,0,1] },
       { text: '立刻去看是什麼', scores: [6,0,0,0,1,1,0,2] },
-      { text: '愣住但繼續放空', scores: [0,0,6,1,0,0,0,1] },
-      { text: '慢慢走但撞到東西', scores: [0,1,0,0,0,0,1,6] }
+      { text: '愣在半路不敢動', scores: [0,4,4,0,0,0,0,1] },
+      { text: '慢慢走但踢到床腳', scores: [0,1,0,0,0,1,0,6] }
     ]
   },
   {
     text: '群組有人重複問問題，你會？',
     options: [
-      { text: '冷靜再講一次', scores: [0,1,0,1,0,1,0,6] },
+      { text: '冷靜再講一次', scores: [0,1,0,6,0,1,0,0] },
       { text: '內心火山爆發', scores: [0,0,0,1,6,0,0,0] },
       { text: '沒懂但熱心回覆', scores: [0,0,1,0,0,6,1,0] },
-      { text: '整理重點丟出去', scores: [0,1,0,0,0,1,6,1] }
+      { text: '整理重點丟出去', scores: [0,1,0,1,0,0,6,0] }
     ]
   },
   {
     text: '看到陌生新品，你會？',
     options: [
-      { text: '直接買來試試', scores: [6,0,0,1,0,0,1,1] },
-      { text: '先查評價再說', scores: [0,6,0,1,0,1,0,1] },
-      { text: '路過但沒注意', scores: [0,0,6,0,0,0,1,1] },
-      { text: '拿最省事的', scores: [0,0,0,0,0,1,6,2] }
+      { text: '直接買來試試', scores: [6,0,0,0,0,0,1,1] },
+      { text: '先查評價再說', scores: [0,6,0,1,0,1,0,0] },
+      { text: '路過但沒注意', scores: [0,0,6,0,0,1,0,1] },
+      { text: '拿最省事的', scores: [0,0,0,0,0,1,6,1] }
     ]
   },
   {
     text: '行程突然被改掉，你會？',
     options: [
-      { text: '開始緊張', scores: [0,6,0,1,0,0,1,1] },
-      { text: '默默接受', scores: [0,1,0,1,0,1,0,6] },
+      { text: '開始緊張', scores: [0,6,0,0,1,0,1,0] },
+      { text: '默默接受', scores: [0,1,0,6,0,2,0,1] },
       { text: '表面沒事內心怒', scores: [1,0,0,1,6,0,0,0] },
       { text: '好吧就這樣', scores: [0,0,0,0,0,0,6,1] }
     ]
@@ -1356,18 +1356,18 @@ const QUESTIONS = [
     text: '朋友約你去陌生地點，你會？',
     options: [
       { text: '馬上答應', scores: [6,0,0,0,0,1,1,1] },
-      { text: '先問清楚細節', scores: [0,6,0,1,0,1,0,2] },
-      { text: '被約就很開心', scores: [0,0,0,0,0,6,1,1] },
-      { text: '答應但亂衝', scores: [1,0,0,0,0,0,1,6] }
+      { text: '先問清楚細節', scores: [0,6,0,1,0,1,0,1] },
+      { text: '被約就很開心', scores: [1,0,0,0,0,6,1,1] },
+      { text: '介入行程安排', scores: [1,0,0,0,0,0,6,1] }
     ]
   },
   {
     text: '大家都在忙時，你像？',
     options: [
-      { text: '嘴開開地旁觀', scores: [0,0,6,1,0,0,0,1] },
-      { text: '默默扛雜事', scores: [0,1,0,1,0,1,0,6] },
-      { text: '快速做完但無感', scores: [0,0,0,0,0,0,6,2] },
-      { text: '覺得一切很新奇', scores: [6,1,0,0,0,0,1,1] }
+      { text: '嘴開開地旁觀', scores: [0,0,6,0,0,1,0,1] },
+      { text: '默默扛雜事', scores: [0,1,0,6,0,2,0,0] },
+      { text: '快速做完但無感', scores: [0,0,0,1,0,0,6,0] },
+      { text: '開心地亂做', scores: [1,0,0,0,0,2,1,6] }
     ]
   },
   {
@@ -1375,17 +1375,17 @@ const QUESTIONS = [
     options: [
       { text: '承認但火大！', scores: [0,0,0,0,6,0,0,0] },
       { text: '嘴巴張開不回應', scores: [0,0,6,0,0,0,0,0] },
-      { text: '我哪裡矮？', scores: [4,0,0,0,2,0,0,0] },
-      { text: '根本沒在聽', scores: [0,0,4,0,0,1,0,1] }
+      { text: '我哪裡矮？', scores: [3,1,0,0,4,0,0,0] },
+      { text: '根本沒在聽', scores: [0,0,4,0,0,2,0,1] }
     ]
   },
   {
     text: '你做事最常被說？',
     options: [
-      { text: '很小心', scores: [0,6,0,1,0,1,0,1] },
-      { text: '很能忍', scores: [0,1,0,0,0,1,0,6] },
-      { text: '快但沒靈魂', scores: [0,0,0,0,0,0,6,1] },
-      { text: '悠閒但亂來', scores: [0,0,0,0,0,0,1,6] }
+      { text: '很小心', scores: [0,6,0,1,0,0,0,0] },
+      { text: '很能忍', scores: [0,1,0,6,0,2,0,0] },
+      { text: '效率一級棒', scores: [1,0,0,0,0,0,6,0] },
+      { text: '悠閒但亂來', scores: [0,0,0,0,0,1,1,6] }
     ]
   },
   {
@@ -1888,7 +1888,8 @@ ${sanitizeNoEllipsis(p.tagline)}
 ${lines[0] || ''}
 ${lines[1] || ''}
 
-你是哪一種皮克敏？快來測測看！`;
+你是哪一種皮克敏？快來測測看！
+https://eritung.github.io/pikmin-quiz/`;
 
   copyToClipboard(text)
     .then(() => showToast('✅ 分享文字已複製！'))
