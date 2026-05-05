@@ -1464,10 +1464,10 @@ function formatShareTextWithBreaks(str) {
 function tryOpenSharedResult() {
   const params = new URLSearchParams(window.location.search);
   const resultId = params.get('result');
-  if (!resultId) return;
+  if (!resultId) return false;
 
   const idx = PIKMIN.findIndex(p => p.id === resultId);
-  if (idx === -1) return;
+  if (idx === -1) return false;
 
   const name = params.get('name');
   if (name) {
@@ -1478,7 +1478,9 @@ function tryOpenSharedResult() {
 
   currentQuestion = QUESTIONS.length;
   scores = [0,0,0,0,0,0,0,0];
-  showResultScreen(idx);
+  hasSavedCurrentResult = true;
+  showResultScreen(idx, { skipUrlUpdate: true, skipSave: true });
+  return true;
 }
 
 // ======================== SCREEN NAV ========================
@@ -1590,7 +1592,7 @@ async function renderResultSecret(currentPikmin) {
   secretEl.textContent = `🎺偷偷跟你說 ${picked.name}是${picked.result}`;
 }
 
-function showResultScreen(idx) {
+function showResultScreen(idx, options = {}) {
   currentResultIdx = idx;
   const p = PIKMIN[idx];
   showScreen('result');
@@ -1633,7 +1635,7 @@ function showResultScreen(idx) {
   document.getElementById('result-name').textContent = p.name;
   const displayName = playerName || '你';
   document.getElementById('result-desc').textContent = `${displayName}，${p.desc}`;
-  updateResultUrl(p.id, playerName);
+  if (!options.skipUrlUpdate) updateResultUrl(p.id, playerName);
 
   // Traits
   const traitsEl = document.getElementById('result-traits');
@@ -1647,7 +1649,7 @@ function showResultScreen(idx) {
     traitsEl.appendChild(pill);
   });
 
-  renderResultInsights(idx);
+  renderResultInsights(idx, options);
 }
 
 
@@ -1709,11 +1711,11 @@ async function saveQuizResultToSupabase(p) {
   }
 }
 
-function renderResultInsights(idx) {
+function renderResultInsights(idx, options = {}) {
   const p = PIKMIN[idx];
   currentMetrics = getTraitMetricsByScores(idx);
   drawRadarChart(currentMetrics, p.color);
-  saveQuizResultToSupabase(p);
+  if (!options.skipSave) saveQuizResultToSupabase(p);
 }
 
 function drawRadarChart(metrics, color) {
@@ -1970,6 +1972,8 @@ function showToast(msg) {
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 2500);
 }
+
+tryOpenSharedResult();
 </script>
 </body>
 </html>
